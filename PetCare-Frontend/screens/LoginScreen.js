@@ -55,22 +55,26 @@ setOtpSent(true);
     }
   };
 
-  const handleVerifyOtp = async () => {
-    if (!otp) {
-      setOtpError("Ingresa el código OTP");
-      return;
-    } else {
-      setOtpError("");
-    }
+const handleVerifyOtp = async () => {
+  if (!otp) {
+    setOtpError("Ingresa el código OTP");
+    return;
+  } else {
+    setOtpError("");
+  }
 
-    try {
-      const res = await verifyOtp({ email, otp });
-      await AsyncStorage.setItem("token", res.data.token);
-      navigation.replace(res.data.firstLogin ? "Profile" : "Main");
-    } catch {
-      setOtpError("Código incorrecto o expirado");
-    }
-  };
+  try {
+    const res = await verifyOtp({ email, otp });
+    await AsyncStorage.setItem("token", res.data.token);
+
+    const firstLogin = res.data.user.firstLogin; // ✅ obtén desde el backend
+    if (firstLogin) navigation.replace("Profile");
+    else navigation.replace("Main");
+  } catch {
+    setOtpError("Código incorrecto o expirado");
+  }
+};
+
 
   return (
     <View style={globalStyles.container}>

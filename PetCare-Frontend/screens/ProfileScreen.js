@@ -6,7 +6,6 @@ import { getMe, updateProfile } from "../services/api";
 export default function ProfileScreen({ navigation }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [avatar, setAvatar] = useState("");
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -14,7 +13,6 @@ export default function ProfileScreen({ navigation }) {
         const res = await getMe();
         setName(res.data.name || "");
         setPhone(res.data.phone || "");
-        setAvatar(res.data.avatar || "");
       } catch {
         Alert.alert("Error", "No se pudo cargar usuario");
       }
@@ -24,9 +22,9 @@ export default function ProfileScreen({ navigation }) {
 
   const handleSave = async () => {
     try {
-      await updateProfile({ name, phone, avatar });
+      await updateProfile({ name, phone });
       Alert.alert("Éxito", "Perfil actualizado correctamente");
-      navigation.navigate("Main", { screen: "Home" }); 
+      navigation.replace("Main"); // ✅ Ir al menú principal
     } catch {
       Alert.alert("Error", "No se pudo actualizar el perfil");
     }
@@ -34,7 +32,7 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <View style={globalStyles.container}>
-      <Text style={globalStyles.title}>Personaliza tu perfil</Text>
+      <Text style={globalStyles.title}>Completa tus datos</Text>
       <TextInput
         style={globalStyles.input}
         placeholder="Nombre"
@@ -46,12 +44,6 @@ export default function ProfileScreen({ navigation }) {
         placeholder="Teléfono"
         value={phone}
         onChangeText={setPhone}
-      />
-      <TextInput
-        style={globalStyles.input}
-        placeholder="Avatar (URL)"
-        value={avatar}
-        onChangeText={setAvatar}
       />
       <TouchableOpacity style={globalStyles.button} onPress={handleSave}>
         <Text style={globalStyles.buttonText}>Guardar</Text>

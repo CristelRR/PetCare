@@ -1,18 +1,48 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, Image, FlatList, ScrollView, TextInput } from "react-native";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  FlatList,
+  Alert,
+  Image,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  ScrollView,
+  Platform,
+} from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import DateTimePicker from "@react-native-community/datetimepicker"; // Usaremos este
 import { globalStyles } from "../styles/globalStyles";
-import { registerPet } from "../services/petsApi";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { registerPet, getPets } from "../services/petsApi";
 
 export default function RegisterPetScreen() {
   const [showForm, setShowForm] = useState(false);
   const [pets, setPets] = useState([]);
-  const [petName, setPetName] = useState("");
-  const [petBirth, setPetBirth] = useState(null);
-  const [petPhoto, setPetPhoto] = useState(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const [name, setName] = useState("");
+  const [species, setSpecies] = useState("");
+  const [breed, setBreed] = useState("");
+  const [age, setAge] = useState("");
+  const [photo, setPhoto] = useState(null);
+
+  useEffect(() => {
+    loadPets();
+  }, []);
+
+  const loadPets = async () => {
+    try {
+      setLoading(true);
+      const res = await getPets();
+      setPets(res.data);
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Error", "No se pudieron cargar las mascotas.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -23,124 +53,159 @@ export default function RegisterPetScreen() {
     });
 
     if (!result.canceled) {
-      setPetPhoto(result.assets[0].uri);
+      setPhoto(result.assets[0].uri);
     }
-  };
-
-  const handleDateChange = (event, selectedDate) => {
-    setShowDatePicker(false);
-    if (selectedDate) setPetBirth(selectedDate);
   };
 
   const addPet = async () => {
-    if (!petName || !petBirth || !petPhoto) {
-      alert("Por favor completa todos los campos.");
+    if (!name || !species) {
+      Alert.alert("Campos obligatorios", "Debes ingresar nombre y especie.");
       return;
     }
 
-    const newPet = {
-      id: Date.now().toString(),
-      name: petName,
-      birth: petBirth.toLocaleDateString(),
-      photo: petPhoto,
-    };
-
-    setPets([...pets, newPet]);
-
-    // Limpiar formulario
-    setPetName("");
-    setPetBirth(null);
-    setPetPhoto(null);
-    setShowForm(false);
-
-    // Enviar al backend
     try {
-      const ownerId = await AsyncStorage.getItem("userId");
-      await registerPet({ name: newPet.name, birth: newPet.birth, photo: newPet.photo, ownerId });
-      alert("Mascota registrada correctamente.");
+      await registerPet({ name, species, breed, age: Number(age), photo });
+      Alert.alert("Éxito", "Mascota registrada correctamente.");
+      setName("");
+      setSpecies("");
+      setBreed("");
+      setAge("");
+      setPhoto(null);
+      setShowForm(false);
+      loadPets();
     } catch (error) {
       console.log(error);
-      alert("No se pudo registrar la mascota.");
+      Alert.alert("Error", "No se pudo registrar la mascota.");
     }
   };
 
   const renderPetCard = ({ item }) => (
-    <View style={{
-      backgroundColor: "#FFF",
-      borderRadius: 12,
-      padding: 12,
-      marginBottom: 12,
-      flexDirection: "row",
-      alignItems: "center",
-      shadowColor: "#000",
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 2
-    }}>
-      <Image source={{ uri: item.photo }} style={{ width: 60, height: 60, borderRadius: 30, marginRight: 12 }} />
+    <View
+      style={{
+        backgroundColor: "#FFF",
+        borderRadius: 12,
+        padding: 12,
+        marginBottom: 12,
+        shadowColor: "#000",
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+        flexDirection: "row",
+        alignItems: "center",
+      }}
+    >
+      {item.photo ? (
+        <Image
+          source={{ uri: item.photo }}
+          style={{
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+            marginRight: 12,
+          }}
+        />
+      ) : null}
+
       <View style={{ flex: 1 }}>
         <Text style={{ fontWeight: "bold", fontSize: 16 }}>{item.name}</Text>
-        <Text>{item.birth}</Text>
+        <Text>Especie: {item.species}</Text>
+        {item.breed ? <Text>Raza: {item.breed}</Text> : null}
+        {item.age ? <Text>Edad: {item.age} años</Text> : null}
       </View>
     </View>
   );
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 16, backgroundColor: "#FFF8E7" }}>
-      <Text style={globalStyles.title}>Registrar Mascota</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: "#FFF8E7" }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+      >
+        <Text style={globalStyles.title}>Registrar Mascota</Text>
 
-      <TouchableOpacity style={globalStyles.button} onPress={() => setShowForm(!showForm)}>
-        <Text style={globalStyles.buttonText}>{showForm ? "Cancelar" : "Agregar Mascota"}</Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={globalStyles.button}
+          onPress={() => setShowForm(!showForm)}
+        >
+          <Text style={globalStyles.buttonText}>
+            {showForm ? "Cancelar" : "Agregar Mascota"}
+          </Text>
+        </TouchableOpacity>
 
-      {showForm && (
-        <View style={{ marginVertical: 16 }}>
-          <TextInput
-            placeholder="Nombre"
-            style={globalStyles.input}
-            value={petName}
-            onChangeText={setPetName}
-          />
-
-          {/* Botón para abrir calendario */}
-          <TouchableOpacity
-            style={globalStyles.input}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <Text style={{ color: petBirth ? "#000" : "#888", paddingVertical: 10 }}>
-              {petBirth ? petBirth.toLocaleDateString() : "Selecciona la fecha de nacimiento"}
-            </Text>
-          </TouchableOpacity>
-
-          {showDatePicker && (
-            <DateTimePicker
-              value={petBirth || new Date()}
-              mode="date"
-              display="default"
-              onChange={handleDateChange}
+        {showForm && (
+          <View style={{ marginVertical: 16 }}>
+            <TextInput
+              placeholder="Nombre"
+              style={globalStyles.input}
+              value={name}
+              onChangeText={setName}
             />
-          )}
 
-          <TouchableOpacity style={[globalStyles.button, { marginTop: 8 }]} onPress={pickImage}>
-            <Text style={globalStyles.buttonText}>{petPhoto ? "Cambiar Foto" : "Seleccionar Foto"}</Text>
-          </TouchableOpacity>
+            <TextInput
+              placeholder="Especie (Perro, Gato...)"
+              style={globalStyles.input}
+              value={species}
+              onChangeText={setSpecies}
+            />
 
-          {petPhoto && (
-            <Image source={{ uri: petPhoto }} style={{ width: 100, height: 100, borderRadius: 50, marginTop: 12, alignSelf: "center" }} />
-          )}
+            <TextInput
+              placeholder="Raza (opcional)"
+              style={globalStyles.input}
+              value={breed}
+              onChangeText={setBreed}
+            />
 
-          <TouchableOpacity style={globalStyles.button} onPress={addPet}>
-            <Text style={globalStyles.buttonText}>Guardar Mascota</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+            <TextInput
+              placeholder="Edad (opcional)"
+              style={globalStyles.input}
+              value={age}
+              onChangeText={setAge}
+              keyboardType="numeric"
+            />
 
-      <FlatList
-        data={pets}
-        keyExtractor={(item) => item.id}
-        renderItem={renderPetCard}
-        contentContainerStyle={{ paddingVertical: 16 }}
-      />
-    </ScrollView>
+            <TouchableOpacity
+              style={[globalStyles.button, { marginVertical: 8 }]}
+              onPress={pickImage}
+            >
+              <Text style={globalStyles.buttonText}>
+                {photo ? "Cambiar Foto" : "Seleccionar Foto"}
+              </Text>
+            </TouchableOpacity>
+
+            {photo && (
+              <Image
+                source={{ uri: photo }}
+                style={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: 50,
+                  alignSelf: "center",
+                  marginBottom: 8,
+                }}
+              />
+            )}
+
+            <TouchableOpacity style={globalStyles.button} onPress={addPet}>
+              <Text style={globalStyles.buttonText}>Guardar Mascota</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <Text style={[globalStyles.title, { marginTop: 16 }]}>Mis Mascotas</Text>
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#333" style={{ marginTop: 20 }} />
+        ) : pets.length === 0 ? (
+          <Text style={{ textAlign: "center", marginTop: 20 }}>
+            No hay mascotas registradas.
+          </Text>
+        ) : (
+          pets.map((pet) => <View key={pet._id}>{renderPetCard({ item: pet })}</View>)
+        )}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
