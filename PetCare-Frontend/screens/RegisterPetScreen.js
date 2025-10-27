@@ -14,27 +14,36 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { globalStyles } from "../styles/globalStyles";
 import { registerPet, getPets, identifyPetPhoto } from "../services/petsApi";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
+
 
 export default function RegisterPetScreen() {
   const [showForm, setShowForm] = useState(false);
   const [pets, setPets] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Campos del formulario
   const [name, setName] = useState("");
-  const [species, setSpecies] = useState("");
   const [breed, setBreed] = useState("");
-  const [age, setAge] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [sex, setSex] = useState("");
+  const [color, setColor] = useState("");
+  const [marks, setMarks] = useState("");
   const [photo, setPhoto] = useState(null);
 
-  useEffect(() => {
-    loadPets();
-  }, []);
+ useFocusEffect(
+  useCallback(() => {
+    loadPets(); // 🔁 recarga la lista cada vez que abres esta pestaña
+  }, [])
+);
+
 
   const loadPets = async () => {
     try {
       setLoading(true);
       const res = await getPets();
-      setPets(res.data);
+      setPets(res.data || []);
     } catch (error) {
       console.log(error);
       Alert.alert("Error", "No se pudieron cargar las mascotas.");
@@ -43,72 +52,84 @@ export default function RegisterPetScreen() {
     }
   };
 
-  // ✅ Función corregida para abrir la galería y usar IA
-  const pickImage = async () => {
-    try {
-      // Pedimos permisos antes
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (permissionResult.status !== "granted") {
-        Alert.alert(
-          "Permiso denegado",
-          "Debes otorgar permiso para acceder a la galería."
-        );
-        return;
-      }
-
-      // Abrimos la galería (forma que ya te funcionaba)
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images, // ✅ el correcto
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.7,
-      });
-
-      if (!result.canceled) {
-        const uri = result.assets[0].uri;
-        setPhoto(uri);
-
-        try {
-          // Llamamos a la IA (solo después de que se haya elegido una imagen)
-          const aiResult = await identifyPetPhoto(uri);
-          console.log("🔍 Resultado IA:", aiResult);
-
-          Alert.alert(
-            "Resultado de IA",
-            `Parece que es un ${aiResult.predictedLabel} (${(
-              aiResult.confidence * 100
-            ).toFixed(1)}% de confianza)`
-          );
-
-          // Rellenar especie automáticamente (opcional)
-          setSpecies(aiResult.predictedLabel);
-        } catch (error) {
-          console.log("⚠️ Error IA:", error);
-          Alert.alert("Error", "No se pudo identificar la imagen.");
-        }
-      }
-    } catch (error) {
-      console.error("🚨 Error en pickImage:", error);
+const pickImage = async () => {
+  try {
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.status !== "granted") {
+      Alert.alert("Permiso denegado", "Debes otorgar permiso para acceder a la galería.");
+      return;
     }
-  };
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+  mediaTypes: ImagePicker.MediaTypeOptions.Images,
+  allowsEditing: true,
+  aspect: [1, 1],
+  quality: 0.7,
+});
+
+
+    if (result.canceled) return;
+
+    const uri = result.assets[0].uri;
+    setPhoto(uri);
+
+    try {
+  const aiResult = await identifyPetPhoto(uri);
+  console.log("🧠 Resultado IA (frontend):", aiResult);
+
+  const label =
+    aiResult?.predictedLabel ||
+    aiResult?.label ||
+    aiResult?.result?.predictedLabel ||
+    aiResult?.result?.label ||
+    "Desconocido";
+
+  const score =
+    aiResult?.confidence ??
+    aiResult?.score ??
+    aiResult?.result?.confidence ??
+    aiResult?.result?.score ??
+    0;
+
+  console.log("✅ Label detectado:", label);
+  console.log("✅ Score detectado:", score);
+
+  setBreed(label);
+
+  Alert.alert(
+    "Resultado de IA",
+    `Parece que es un ${label} (${(score * 100).toFixed(1)}% de confianza)`
+  );
+} catch (error) {
+  console.log("⚠️ Error IA:", error);
+  Alert.alert("Error", "No se pudo identificar la imagen.");
+}
+
+  } catch (error) {
+    console.error("🚨 Error en pickImage:", error);
+  }
+};
+
 
   const addPet = async () => {
-    if (!name || !species) {
-      Alert.alert("Campos obligatorios", "Debes ingresar nombre y especie.");
+    if (!name) {
+      Alert.alert("Campos obligatorios", "Debes ingresar al menos el nombre.");
       return;
     }
 
     try {
-      await registerPet({ name, species, breed, age: Number(age), photo });
+      await registerPet({ name, breed, birthDate, sex, color, marks, photo });
       Alert.alert("Éxito", "Mascota registrada correctamente.");
+
       setName("");
-      setSpecies("");
       setBreed("");
-      setAge("");
+      setBirthDate("");
+      setSex("");
+      setColor("");
+      setMarks("");
       setPhoto(null);
       setShowForm(false);
-      loadPets();
+      loadPets(); // ✅ recarga lista
     } catch (error) {
       console.log(error);
       Alert.alert("Error", "No se pudo registrar la mascota.");
@@ -126,27 +147,18 @@ export default function RegisterPetScreen() {
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 2,
-        flexDirection: "row",
-        alignItems: "center",
       }}
     >
-      {item.photo && (
-        <Image
-          source={{ uri: item.photo }}
-          style={{
-            width: 60,
-            height: 60,
-            borderRadius: 30,
-            marginRight: 12,
-          }}
-        />
+      <Text style={{ fontWeight: "bold", fontSize: 16 }}>{item.name}</Text>
+      {item.breed && <Text>Raza: {item.breed}</Text>}
+      {item.birthDate && (
+        <Text>
+          Nacimiento: {new Date(item.birthDate).toLocaleDateString()}
+        </Text>
       )}
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontWeight: "bold", fontSize: 16 }}>{item.name}</Text>
-        <Text>Especie: {item.species}</Text>
-        {item.breed && <Text>Raza: {item.breed}</Text>}
-        {item.age && <Text>Edad: {item.age} años</Text>}
-      </View>
+      {item.sex && <Text>Sexo: {item.sex}</Text>}
+      {item.color && <Text>Color: {item.color}</Text>}
+      {item.marks && <Text>Señas: {item.marks}</Text>}
     </View>
   );
 
@@ -179,23 +191,34 @@ export default function RegisterPetScreen() {
               onChangeText={setName}
             />
             <TextInput
-              placeholder="Especie (Perro, Gato...)"
-              style={globalStyles.input}
-              value={species}
-              onChangeText={setSpecies}
-            />
-            <TextInput
-              placeholder="Raza (opcional)"
+              placeholder="Raza"
               style={globalStyles.input}
               value={breed}
               onChangeText={setBreed}
             />
             <TextInput
-              placeholder="Edad (opcional)"
+              placeholder="Fecha de nacimiento (YYYY-MM-DD)"
               style={globalStyles.input}
-              value={age}
-              onChangeText={setAge}
-              keyboardType="numeric"
+              value={birthDate}
+              onChangeText={setBirthDate}
+            />
+            <TextInput
+              placeholder="Sexo (Hembra / Macho)"
+              style={globalStyles.input}
+              value={sex}
+              onChangeText={setSex}
+            />
+            <TextInput
+              placeholder="Color"
+              style={globalStyles.input}
+              value={color}
+              onChangeText={setColor}
+            />
+            <TextInput
+              placeholder="Señas particulares"
+              style={globalStyles.input}
+              value={marks}
+              onChangeText={setMarks}
             />
 
             <TouchableOpacity

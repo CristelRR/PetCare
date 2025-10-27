@@ -11,26 +11,24 @@ export const createPet = async (req: Request, res: Response) => {
     if (!token) return res.status(401).json({ message: "Token no proporcionado" });
 
     const decoded: any = jwt.verify(token, JWT_SECRET);
-    const { name, species, breed, age } = req.body;
+    const { name, breed, birthDate, sex, color, marks } = req.body;
 
-    if (!name || !species)
-      return res.status(400).json({ message: "Nombre y especie son obligatorios" });
+    if (!name)
+      return res.status(400).json({ message: "El nombre es obligatorio" });
 
     let photoUrl = null;
     if (req.file) {
       const baseUrl = `${req.protocol}://${req.get("host")}`;
       photoUrl = `${baseUrl}/uploads/${req.file.filename}`;
-      console.log("✅ Imagen recibida:", req.file);
-      console.log("✅ Ruta generada:", photoUrl);
-    } else {
-      console.log("⚠️ No se recibió archivo en req.file");
     }
 
     const newPet = new Pet({
       name,
-      species,
       breed,
-      age,
+      birthDate,
+      sex,
+      color,
+      marks,
       ownerId: decoded.id,
       photo: photoUrl,
     });
@@ -39,6 +37,26 @@ export const createPet = async (req: Request, res: Response) => {
     res.status(201).json({ message: "Mascota registrada correctamente", pet: newPet });
   } catch (error) {
     console.error("Error al crear mascota:", error);
+    res.status(500).json({ message: "Error interno del servidor" });
+  }
+};
+
+export const updatePet = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, breed, birthDate, sex, color, marks } = req.body;
+
+    const pet = await Pet.findByIdAndUpdate(
+      id,
+      { name, breed, birthDate, sex, color, marks },
+      { new: true, runValidators: true }
+    );
+
+    if (!pet) return res.status(404).json({ message: "Mascota no encontrada" });
+
+    res.json({ message: "Mascota actualizada correctamente", pet });
+  } catch (error) {
+    console.error("Error al actualizar mascota:", error);
     res.status(500).json({ message: "Error interno del servidor" });
   }
 };
@@ -68,27 +86,6 @@ export const getPetById = async (req: Request, res: Response) => {
     res.json(pet);
   } catch (error) {
     res.status(500).json({ message: "Error al obtener mascota" });
-  }
-};
-
-// Actualizar mascota
-export const updatePet = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const { name, species, breed, age } = req.body;
-
-    const pet = await Pet.findByIdAndUpdate(
-      id,
-      { name, species, breed, age },
-      { new: true, runValidators: true }
-    );
-
-    if (!pet) return res.status(404).json({ message: "Mascota no encontrada" });
-
-    res.json({ message: "Mascota actualizada correctamente", pet });
-  } catch (error) {
-    console.error("Error al actualizar mascota:", error);
-    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 

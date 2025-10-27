@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import HomeScreen from "../screens/HomeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import RegisterPetScreen from "../screens/RegisterPetScreen";
-import PetGalleryScreen from "../screens/PetGalleryScreen";
+import PetDetailsScreen from "../screens/PetDetailsScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -18,8 +18,9 @@ export default function TabNavigator() {
           let iconName;
           if (route.name === "Home") iconName = "home-outline";
           else if (route.name === "Profile") iconName = "person-outline";
-          else if (route.name === "RegisterPet") iconName = "add-circle-outline";
-          else if (route.name === "PetGallery") iconName = "images-outline";
+          else if (route.name === "RegisterPet")
+            iconName = "add-circle-outline";
+          else if (route.name === "PetDetails") iconName = "paw-outline";
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
@@ -34,9 +35,9 @@ export default function TabNavigator() {
         options={{ title: "Registrar Mascota" }}
       />
       <Tab.Screen
-        name="PetGallery"
-        component={PetGalleryScreen}
-        options={{ title: "Galería" }}
+        name="PetDetails"
+        component={PetDetailsScreen}
+        options={{ title: "Detalles / Historial" }}
       />
       <Tab.Screen
         name="Profile"

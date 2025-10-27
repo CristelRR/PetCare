@@ -10,6 +10,7 @@ import aiRoutes from "./routes/ai";
 import swaggerSpec from "./config/swagger";
 import swaggerUi from "swagger-ui-express";
 import path from "path";
+import petHistoryRoutes from "./routes/petHistoryRoutes";
 
 dotenv.config();
 connectDB();
@@ -30,6 +31,8 @@ app.use("/api", userRoutes);
 app.use("/api", petRoutes);
 app.use("/api", meRoutes);
 app.use("/api", aiRoutes);
+app.use("/api/history", petHistoryRoutes);
+
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Servidor corriendo en puerto ${PORT} 🚀`));
