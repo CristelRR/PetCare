@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   TextInput,
-  FlatList,
   Alert,
   Image,
   ActivityIndicator,
@@ -14,7 +13,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { globalStyles } from "../styles/globalStyles";
-import { registerPet, getPets } from "../services/petsApi";
+import { registerPet, getPets, identifyPetPhoto } from "../services/petsApi";
 
 export default function RegisterPetScreen() {
   const [showForm, setShowForm] = useState(false);
@@ -44,16 +43,53 @@ export default function RegisterPetScreen() {
     }
   };
 
+  // ✅ Función corregida para abrir la galería y usar IA
   const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
+    try {
+      // Pedimos permisos antes
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (!result.canceled) {
-      setPhoto(result.assets[0].uri);
+      if (permissionResult.status !== "granted") {
+        Alert.alert(
+          "Permiso denegado",
+          "Debes otorgar permiso para acceder a la galería."
+        );
+        return;
+      }
+
+      // Abrimos la galería (forma que ya te funcionaba)
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images, // ✅ el correcto
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+      });
+
+      if (!result.canceled) {
+        const uri = result.assets[0].uri;
+        setPhoto(uri);
+
+        try {
+          // Llamamos a la IA (solo después de que se haya elegido una imagen)
+          const aiResult = await identifyPetPhoto(uri);
+          console.log("🔍 Resultado IA:", aiResult);
+
+          Alert.alert(
+            "Resultado de IA",
+            `Parece que es un ${aiResult.predictedLabel} (${(
+              aiResult.confidence * 100
+            ).toFixed(1)}% de confianza)`
+          );
+
+          // Rellenar especie automáticamente (opcional)
+          setSpecies(aiResult.predictedLabel);
+        } catch (error) {
+          console.log("⚠️ Error IA:", error);
+          Alert.alert("Error", "No se pudo identificar la imagen.");
+        }
+      }
+    } catch (error) {
+      console.error("🚨 Error en pickImage:", error);
     }
   };
 
@@ -94,7 +130,7 @@ export default function RegisterPetScreen() {
         alignItems: "center",
       }}
     >
-      {item.photo ? (
+      {item.photo && (
         <Image
           source={{ uri: item.photo }}
           style={{
@@ -104,13 +140,12 @@ export default function RegisterPetScreen() {
             marginRight: 12,
           }}
         />
-      ) : null}
-
+      )}
       <View style={{ flex: 1 }}>
         <Text style={{ fontWeight: "bold", fontSize: 16 }}>{item.name}</Text>
         <Text>Especie: {item.species}</Text>
-        {item.breed ? <Text>Raza: {item.breed}</Text> : null}
-        {item.age ? <Text>Edad: {item.age} años</Text> : null}
+        {item.breed && <Text>Raza: {item.breed}</Text>}
+        {item.age && <Text>Edad: {item.age} años</Text>}
       </View>
     </View>
   );
@@ -143,21 +178,18 @@ export default function RegisterPetScreen() {
               value={name}
               onChangeText={setName}
             />
-
             <TextInput
               placeholder="Especie (Perro, Gato...)"
               style={globalStyles.input}
               value={species}
               onChangeText={setSpecies}
             />
-
             <TextInput
               placeholder="Raza (opcional)"
               style={globalStyles.input}
               value={breed}
               onChangeText={setBreed}
             />
-
             <TextInput
               placeholder="Edad (opcional)"
               style={globalStyles.input}

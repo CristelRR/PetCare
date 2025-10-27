@@ -45,3 +45,23 @@ export const registerPet = async (data) => {
     transformRequest: (data) => data, // evita que axios altere el FormData
   });
 }
+
+export const identifyPetPhoto = async (photoUri) => {
+  const token = await AsyncStorage.getItem("token");
+
+  const formData = new FormData();
+  formData.append("photo", {
+    uri: photoUri,
+    type: "image/jpeg",
+    name: "photo.jpg",
+  });
+
+  const res = await axios.post(`${API_URL}/ai/identify`, formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
+  return res.data;
+};
