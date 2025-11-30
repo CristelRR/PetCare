@@ -61,37 +61,38 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  const renderPost = ({ item }) => (
-    <View
+ const renderPost = ({ item }) => (
+  <View
+    style={{
+      backgroundColor: "white",
+      marginBottom: 20,
+      borderRadius: 16,
+      padding: 12,
+    }}
+  >
+    <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
+      {item.userName || "Usuario"}
+    </Text>
+
+    {/* 📌 Mostrar Base64 correctamente */}
+    <Image
+      source={{ uri: `data:image/jpeg;base64,${item.image}` }}
       style={{
-        backgroundColor: "white",
-        marginBottom: 20,
-        borderRadius: 16,
-        padding: 12,
+        width: "100%",
+        height: 280,
+        borderRadius: 10,
+        marginBottom: 10,
       }}
-    >
-      <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
-        {item.userName}
-      </Text>
+    />
 
-      {/* 👍 Corrección URL correcta */}
-      <Image
-        source={{ uri: `${BASE_URL}${item.imageUrl}` }}
-        style={{
-          width: "100%",
-          height: 280,
-          borderRadius: 10,
-          marginBottom: 10,
-        }}
-      />
+    <TouchableOpacity onPress={() => handleLike(item._id)}>
+      <Text style={{ fontSize: 16 }}>❤️ {item.likes.length} Me gusta</Text>
+    </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => handleLike(item._id)}>
-        <Text style={{ fontSize: 16 }}>❤️ {item.likes.length} Me gusta</Text>
-      </TouchableOpacity>
+    <Text style={{ marginTop: 10 }}>{item.description}</Text>
+  </View>
+);
 
-      <Text style={{ marginTop: 10 }}>{item.description}</Text>
-    </View>
-  );
 
   return (
     <ScrollView style={{ backgroundColor: "#FFF8E7" }}>

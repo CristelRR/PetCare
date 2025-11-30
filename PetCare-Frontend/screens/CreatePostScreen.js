@@ -22,11 +22,13 @@ export default function CreatePostScreen({ navigation }) {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.7,
+        base64: true,     // 🔥 AHORA SÍ BASE64!!
       });
 
       if (!result.canceled) {
-        setImage(result.assets[0].uri);
+        setImage(result.assets[0].base64);
       }
+
     } catch (error) {
       console.log("❌ Error al seleccionar imagen:", error);
       Alert.alert("Error", "No se pudo abrir la galería");
@@ -39,19 +41,11 @@ export default function CreatePostScreen({ navigation }) {
 
       const token = await AsyncStorage.getItem("token");
 
-      const form = new FormData();
-      form.append("image", {
-        uri: Platform.OS === "android" ? image : image.replace("file://", ""),
-        name: "photo.jpg",
-        type: "image/jpeg",
-      });
-
-      form.append("description", description);
-
-      await createPost(form, token);
+      await createPost({ image, description }, token);
 
       Alert.alert("Éxito", "Publicación creada");
       navigation.goBack();
+
     } catch (error) {
       console.log("❌ ERROR AL SUBIR:", error);
       Alert.alert("Error", "No se pudo subir la publicación");
@@ -71,7 +65,7 @@ export default function CreatePostScreen({ navigation }) {
 
       {image && (
         <Image
-          source={{ uri: image }}
+          source={{ uri: `data:image/jpeg;base64,${image}` }}
           style={{ width: "100%", height: 250, borderRadius: 10, marginVertical: 10 }}
         />
       )}

@@ -1,15 +1,12 @@
 import axios from "axios";
-import { API_URL } from "@env";
+import { API_URL } from "@env";  // Debe apuntar a tu backend
 
-// API_URL DEBE SER: http://192.168.0.19:5000/api
-
-export const getPosts = () => 
+export const getPosts = () =>
   axios.get(`${API_URL}/community/posts`);
 
-export const createPost = (formData, token) =>
-  axios.post(`${API_URL}/community/posts`, formData, {
+export const createPost = (data, token) =>
+  axios.post(`${API_URL}/community/posts`, data, {
     headers: {
-      "Content-Type": "multipart/form-data",
       Authorization: `Bearer ${token}`,
     },
   });
