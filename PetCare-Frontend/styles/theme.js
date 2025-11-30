@@ -1,22 +1,25 @@
 // src/styles/theme.js
 export const theme = {
   colors: {
-    primary: "#F9C74F", // Amarillo principal
-    secondary: "#F9844A", // Naranja suave para botones o acentos
-    background: "#FFF8E7", // Fondo beige claro
-    text: "#333333", // Texto principal
+    primary: "#F9C74F",
+    secondary: "#F9844A",
+    background: "#FFF8E7",
+    text: "#333333",
     white: "#FFFFFF",
-    border: "#E0C097", // Borde beige
-    danger: "#D62828", // Rojo cálido para errores
+    border: "#E0C097",
+    danger: "#D62828",
+    success: "#43AA8B",
   },
   fonts: {
     regular: "System",
     bold: "System",
   },
   spacing: {
+    xs: 4,
     s: 8,
     m: 16,
     l: 24,
+    xl: 32,
   },
   radius: {
     s: 6,

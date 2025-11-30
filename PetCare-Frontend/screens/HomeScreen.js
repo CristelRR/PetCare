@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// src/screens/HomeScreen.js
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,11 +7,11 @@ import {
   Image,
   TouchableOpacity,
   FlatList,
+  StyleSheet,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useFocusEffect } from "@react-navigation/native";
-import { useCallback } from "react";
-
+import Icon from "react-native-vector-icons/Ionicons";
 
 import { globalStyles } from "../styles/globalStyles";
 import { getPets } from "../services/petsApi";
@@ -18,19 +19,29 @@ import { getPosts, likePost } from "../services/communityApi";
 import { API_URL } from "@env";
 
 export default function HomeScreen({ navigation }) {
-
   const [pets, setPets] = useState([]);
   const [posts, setPosts] = useState([]);
+  const [userId, setUserId] = useState("");
 
-  // 👉 Quita /api para mostrar imágenes
+  // Quitar /api para las fotos
   const BASE_URL = API_URL.replace("/api", "");
 
+  // 🧠 Obtener userId para saber si ya dio like
+  useEffect(() => {
+    const getId = async () => {
+      const uid = await AsyncStorage.getItem("userId");
+      setUserId(uid || "");
+    };
+    getId();
+  }, []);
+
+  // Cargar mascotas y posts cuando entras a la pantalla
   useFocusEffect(
-  useCallback(() => {
-    loadPets();
-    loadPosts();
-  }, [])
-);
+    useCallback(() => {
+      loadPets();
+      loadPosts();
+    }, [])
+  );
 
   const loadPets = async () => {
     try {
@@ -50,143 +61,92 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  // 👍 Corrección: enviar el token
+  // 🔥 LIKE-DISLIKE – SOLO ACTUALIZA EL POST TOCADO
   const handleLike = async (id) => {
     try {
       const token = await AsyncStorage.getItem("token");
-      await likePost(id, token);
-      loadPosts();
+      const res = await likePost(id, token);
+
+      setPosts((prev) =>
+        prev.map((p) => (p._id === id ? res.data.post : p))
+      );
     } catch (error) {
-      console.log("Error al dar like:", error);
+      console.log("Error al dar like:", error.response?.data || error);
     }
   };
 
- const renderPost = ({ item }) => (
-  <View
-    style={{
-      backgroundColor: "white",
-      marginBottom: 20,
-      borderRadius: 16,
-      padding: 12,
-    }}
-  >
-    <Text style={{ fontWeight: "bold", marginBottom: 5 }}>
-      {item.userName || "Usuario"}
-    </Text>
+  /* ======================= RENDER POST ======================= */
+  const renderPost = ({ item }) => (
+    <View style={styles.postCard}>
+      <Text style={styles.postUser}>{item.userId?.name || "Usuario"}</Text>
 
-    {/* 📌 Mostrar Base64 correctamente */}
-    <Image
-      source={{ uri: `data:image/jpeg;base64,${item.image}` }}
-      style={{
-        width: "100%",
-        height: 280,
-        borderRadius: 10,
-        marginBottom: 10,
-      }}
-    />
+      <Image
+        source={{ uri: `data:image/jpeg;base64,${item.image}` }}
+        style={styles.postImage}
+      />
 
-    <TouchableOpacity onPress={() => handleLike(item._id)}>
-      <Text style={{ fontSize: 16 }}>❤️ {item.likes.length} Me gusta</Text>
-    </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => handleLike(item._id)}
+        style={{ flexDirection: "row", alignItems: "center", marginTop: 5 }}
+      >
+        <Icon
+          name={item.likes.includes(userId) ? "heart" : "heart-outline"}
+          size={24}
+          color="#F9844A"
+        />
+        <Text style={styles.likesText}>{item.likes.length} Me gusta</Text>
+      </TouchableOpacity>
 
-    <Text style={{ marginTop: 10 }}>{item.description}</Text>
-  </View>
-);
+      <Text style={styles.postDescription}>{item.description}</Text>
+    </View>
+  );
 
-
+  /* ======================= RENDER ======================= */
   return (
     <ScrollView style={{ backgroundColor: "#FFF8E7" }}>
-      <Text
-        style={{
-          fontSize: 26,
-          fontWeight: "bold",
-          marginTop: 20,
-          marginLeft: 16,
-        }}
-      >
-        Mis Mascotas 🐾
-      </Text>
+      
+      {/* ---------- SECCIÓN MASCOTAS ---------- */}
+      <Text style={styles.sectionTitle}>Mis Mascotas</Text>
 
       <ScrollView
         horizontal
-        style={{ marginTop: 10 }}
         showsHorizontalScrollIndicator={false}
+        style={{ marginTop: 10 }}
       >
-        {/* Tarjeta "Agregar mascota" */}
+        {/* TARJETA AGREGAR MASCOTA */}
         <TouchableOpacity
-          style={{
-            width: 180,
-            height: 210,
-            backgroundColor: "#F9C74F",
-            borderRadius: 20,
-            marginLeft: 16,
-            justifyContent: "center",
-            alignItems: "center",
-          }}
+          style={styles.addPetCard}
           onPress={() => navigation.navigate("RegisterPet")}
         >
-          <Text style={{ fontSize: 40 }}>+</Text>
-          <Text style={{ fontSize: 16, fontWeight: "bold" }}>
-            Agregar Mascota
-          </Text>
+          <Text style={styles.addPlus}>+</Text>
+          <Text style={styles.addText}>Agregar Mascota</Text>
         </TouchableOpacity>
 
+        {/* LISTADO DE MASCOTAS */}
         {pets.map((pet) => (
           <TouchableOpacity
             key={pet._id}
-            style={{
-              width: 180,
-              backgroundColor: "white",
-              borderRadius: 20,
-              padding: 10,
-              marginLeft: 16,
-            }}
+            style={styles.petCard}
             onPress={() =>
               navigation.navigate("PetDetails", { petId: pet._id })
             }
           >
             {pet.photo ? (
-              <Image
-                source={{ uri: pet.photo }}
-                style={{
-                  width: "100%",
-                  height: 130,
-                  borderRadius: 15,
-                  marginBottom: 10,
-                }}
-              />
+              <Image source={{ uri: pet.photo }} style={styles.petImage} />
             ) : (
-              <View
-                style={{
-                  width: "100%",
-                  height: 130,
-                  backgroundColor: "#eaeaea",
-                  borderRadius: 15,
-                  marginBottom: 10,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <Text>Sin foto</Text>
+              <View style={styles.petNoImage}>
+                <Text style={{ color: "#666" }}>Sin foto</Text>
               </View>
             )}
-
-            <Text style={{ fontSize: 18, fontWeight: "bold" }}>{pet.name}</Text>
-            <Text style={{ color: "gray" }}>{pet.breed}</Text>
+            <Text style={styles.petName}>{pet.name}</Text>
+            <Text style={styles.petBreed}>{pet.breed}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      {/* ---------------- COMUNIDAD ---------------- */}
-      <Text
-        style={{
-          fontSize: 26,
-          fontWeight: "bold",
-          marginTop: 30,
-          marginLeft: 16,
-        }}
-      >
-        Comunidad PetCare 📸
+      {/* ---------- SECCIÓN COMUNIDAD ---------- */}
+      <Text style={[styles.sectionTitle, { marginTop: 30 }]}>
+        Comunidad PetCare
       </Text>
 
       <TouchableOpacity
@@ -196,6 +156,7 @@ export default function HomeScreen({ navigation }) {
         <Text style={globalStyles.buttonText}>Subir Foto</Text>
       </TouchableOpacity>
 
+      {/* ---------- POSTS ---------- */}
       <FlatList
         data={posts}
         renderItem={renderPost}
@@ -206,3 +167,72 @@ export default function HomeScreen({ navigation }) {
     </ScrollView>
   );
 }
+
+/* ======================= ESTILOS ======================= */
+
+const styles = StyleSheet.create({
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginTop: 20,
+    marginLeft: 16,
+    color: "#333",
+  },
+
+  /* ----- MASCOTAS ----- */
+  addPetCard: {
+    width: 180,
+    height: 210,
+    backgroundColor: "#F9C74F",
+    borderRadius: 20,
+    marginLeft: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  addPlus: { fontSize: 42, fontWeight: "bold", color: "#333", marginBottom: 5 },
+  addText: { fontSize: 16, fontWeight: "600", color: "#333" },
+
+  petCard: {
+    width: 180,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 10,
+    marginLeft: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  petImage: { width: "100%", height: 130, borderRadius: 15, marginBottom: 10 },
+  petNoImage: {
+    width: "100%",
+    height: 130,
+    backgroundColor: "#ECECEC",
+    borderRadius: 15,
+    marginBottom: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  petName: { fontSize: 18, fontWeight: "bold", color: "#333" },
+  petBreed: { color: "gray", fontSize: 14 },
+
+  /* ----- POST ----- */
+  postCard: {
+    backgroundColor: "white",
+    marginBottom: 20,
+    borderRadius: 16,
+    padding: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  postUser: { fontWeight: "bold", marginBottom: 6, fontSize: 16, color: "#333" },
+  postImage: { width: "100%", height: 280, borderRadius: 10, marginBottom: 10 },
+  likesText: { fontSize: 15, marginLeft: 6, color: "#333", fontWeight: "500" },
+  postDescription: { marginTop: 8, color: "#555" },
+});

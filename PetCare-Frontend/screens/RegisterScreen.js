@@ -1,3 +1,4 @@
+// src/screens/RegisterScreen.js
 import React, { useState } from "react";
 import {
   View,
@@ -6,6 +7,9 @@ import {
   Text,
   Image,
   ScrollView,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { globalStyles } from "../styles/globalStyles";
 import { registerUser } from "../services/api";
@@ -22,7 +26,7 @@ export default function RegisterScreen({ navigation }) {
 
   const [qrCodeUrl, setQrCodeUrl] = useState("");
 
-  // Errores
+  // Errores / mensajes
   const [emailError, setEmailError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [confirmPasswordError, setConfirmPasswordError] = useState("");
@@ -31,19 +35,17 @@ export default function RegisterScreen({ navigation }) {
 
   const handleRegister = async () => {
     let hasError = false;
-
     setGlobalError("");
     setSuccessMessage("");
 
-    // ----------- Validaciones -----------
-
+    // -------- VALIDACIONES --------
     if (!email.trim()) {
       setEmailError("El correo es obligatorio");
       hasError = true;
     } else {
       const emailRegex = /\S+@\S+\.\S+/;
       if (!emailRegex.test(email)) {
-        setEmailError("El formato del correo no es válido");
+        setEmailError("Correo inválido");
         hasError = true;
       } else setEmailError("");
     }
@@ -57,7 +59,7 @@ export default function RegisterScreen({ navigation }) {
     } else setPasswordError("");
 
     if (!confirmPassword) {
-      setConfirmPasswordError("Debes confirmar la contraseña");
+      setConfirmPasswordError("Confirma tu contraseña");
       hasError = true;
     } else if (password !== confirmPassword) {
       setConfirmPasswordError("Las contraseñas no coinciden");
@@ -66,12 +68,10 @@ export default function RegisterScreen({ navigation }) {
 
     if (hasError) return;
 
-    // ----------- Registrar -----------
-
+    // --- REGISTRO ---
     try {
       const res = await registerUser({ email, password });
-
-      setSuccessMessage("Registro exitoso. Redirigiendo...");
+      setSuccessMessage("¡Registro exitoso! Redirigiendo...");
       setEmail("");
       setPassword("");
       setConfirmPassword("");
@@ -86,154 +86,180 @@ export default function RegisterScreen({ navigation }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={globalStyles.container}>
-      {/* Logo */}
-      <Image
-        source={logo}
-        style={{
-          width: 120,
-          height: 120,
-          alignSelf: "center",
-          marginBottom: 20,
-        }}
-        resizeMode="contain"
-      />
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.form}>
+        {/* Logo */}
+        <Image source={logo} style={styles.logo} resizeMode="contain" />
 
-      <Text style={globalStyles.title}>Registro</Text>
+        <Text style={styles.title}>Crear Cuenta</Text>
 
-      {/* Error global */}
-      {globalError ? (
-        <Text style={{ color: "red", textAlign: "center", marginBottom: 10 }}>
-          {globalError}
-        </Text>
-      ) : null}
+        {/* MENSAJES */}
+        {globalError ? <Text style={styles.error}>{globalError}</Text> : null}
+        {successMessage ? (
+          <Text style={styles.success}>{successMessage}</Text>
+        ) : null}
 
-      {/* Success msg */}
-      {successMessage ? (
-        <Text style={{ color: "#ffb100", textAlign: "center", marginBottom: 10 }}>
-          {successMessage}
-        </Text>
-      ) : null}
-
-      {/* Email */}
-      <TextInput
-        style={globalStyles.input}
-        placeholder="Correo electrónico"
-        value={email}
-        onChangeText={(t) => {
-          setEmail(t);
-          setEmailError("");
-        }}
-        keyboardType="email-address"
-        autoCapitalize="none"
-      />
-      {emailError ? (
-        <Text style={{ color: "red", fontSize: 13, marginBottom: 10 }}>
-          {emailError}
-        </Text>
-      ) : null}
-
-      {/* Contraseña */}
-      <View
-        style={[
-          globalStyles.input,
-          {
-            flexDirection: "row",
-            alignItems: "center",
-            paddingRight: 12,
-          },
-        ]}
-      >
+        {/* INPUT EMAIL */}
         <TextInput
-          style={{ flex: 1, paddingVertical: 0 }}
-          placeholder="Contraseña"
-          value={password}
-          onChangeText={(text) => {
-            setPassword(text);
-            setPasswordError("");
+          style={[styles.input, emailError && styles.inputError]}
+          placeholder="Correo electrónico"
+          value={email}
+          onChangeText={(t) => {
+            setEmail(t);
+            setEmailError("");
           }}
-          secureTextEntry={!showPassword}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
+        {emailError ? <Text style={styles.error}>{emailError}</Text> : null}
 
-        <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-          <Feather
-            name={showPassword ? "eye-off" : "eye"}
-            size={22}
-            color="#ffb100"
+        {/* PASSWORD */}
+        <View style={[styles.input, styles.inputRow]}>
+          <TextInput
+            style={{ flex: 1 }}
+            placeholder="Contraseña"
+            value={password}
+            secureTextEntry={!showPassword}
+            onChangeText={(text) => {
+              setPassword(text);
+              setPasswordError("");
+            }}
           />
-        </TouchableOpacity>
-      </View>
-
-      {passwordError ? (
-        <Text style={{ color: "red", fontSize: 13, marginBottom: 10 }}>
-          {passwordError}
-        </Text>
-      ) : null}
-
-      {/* Confirmar contraseña */}
-      <View
-        style={[
-          globalStyles.input,
-          {
-            flexDirection: "row",
-            alignItems: "center",
-            paddingRight: 12,
-          },
-        ]}
-      >
-        <TextInput
-          style={{ flex: 1, paddingVertical: 0 }}
-          placeholder="Confirmar contraseña"
-          value={confirmPassword}
-          onChangeText={(text) => {
-            setConfirmPassword(text);
-            setConfirmPasswordError("");
-          }}
-          secureTextEntry={!showConfirmPassword}
-        />
-
-        <TouchableOpacity
-          onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-        >
-          <Feather
-            name={showConfirmPassword ? "eye-off" : "eye"}
-            size={22}
-            color="#ffb100"
-          />
-        </TouchableOpacity>
-      </View>
-
-      {confirmPasswordError ? (
-        <Text style={{ color: "red", fontSize: 13, marginBottom: 10 }}>
-          {confirmPasswordError}
-        </Text>
-      ) : null}
-
-      {/* Botón */}
-      <TouchableOpacity style={globalStyles.button} onPress={handleRegister}>
-        <Text style={globalStyles.buttonText}>Registrarse</Text>
-      </TouchableOpacity>
-
-      {/* QR */}
-      {qrCodeUrl ? (
-        <View style={{ alignItems: "center", marginTop: 25 }}>
-          <Text style={{ marginBottom: 10 }}>
-            Escanea este código en Google Authenticator:
-          </Text>
-          <Image
-            source={{ uri: qrCodeUrl }}
-            style={{ width: 200, height: 200, borderRadius: 10 }}
-          />
+          <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+            <Feather name={showPassword ? "eye-off" : "eye"} size={22} color="#ffb100" />
+          </TouchableOpacity>
         </View>
-      ) : null}
+        {passwordError ? <Text style={styles.error}>{passwordError}</Text> : null}
 
-      {/* Login link */}
-      <Text
-        style={globalStyles.linkText}
-        onPress={() => navigation.navigate("Login")}
-      >
-        ¿Ya tienes cuenta? Inicia sesión
-      </Text>
-    </ScrollView>
+        {/* CONFIRM PASSWORD */}
+        <View style={[styles.input, styles.inputRow]}>
+          <TextInput
+            style={{ flex: 1 }}
+            placeholder="Confirmar contraseña"
+            value={confirmPassword}
+            secureTextEntry={!showConfirmPassword}
+            onChangeText={(text) => {
+              setConfirmPassword(text);
+              setConfirmPasswordError("");
+            }}
+          />
+          <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
+            <Feather name={showConfirmPassword ? "eye-off" : "eye"} size={22} color="#ffb100" />
+          </TouchableOpacity>
+        </View>
+        {confirmPasswordError ? (
+          <Text style={styles.error}>{confirmPasswordError}</Text>
+        ) : null}
+
+        {/* BOTÓN */}
+        <TouchableOpacity style={styles.button} onPress={handleRegister}>
+          <Text style={styles.buttonText}>Registrarse</Text>
+        </TouchableOpacity>
+
+        {/* QR */}
+        {qrCodeUrl ? (
+          <View style={styles.qrContainer}>
+            <Text style={styles.qrText}>Escanea este QR en Google Authenticator:</Text>
+            <Image source={{ uri: qrCodeUrl }} style={styles.qrImage} />
+          </View>
+        ) : null}
+
+        {/* LINK */}
+        <Text style={styles.link} onPress={() => navigation.navigate("Login")}>
+          ¿Ya tienes cuenta? <Text style={styles.linkUnderline}>Inicia sesión</Text>
+        </Text>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
+
+/* 🎨 ESTILOS BONITOS */
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#FFF8E7",
+  },
+  form: {
+    padding: 20,
+    alignItems: "center",
+  },
+  logo: {
+    width: 130,
+    height: 130,
+    marginBottom: 10,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 20,
+  },
+  input: {
+    width: "100%",
+    backgroundColor: "white",
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  inputError: {
+    borderColor: "red",
+  },
+  error: {
+    color: "red",
+    fontSize: 13,
+    alignSelf: "flex-start",
+  },
+  success: {
+    color: "#ffb100",
+    fontSize: 14,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  button: {
+    backgroundColor: "#ffb100",
+    paddingVertical: 14,
+    width: "100%",
+    borderRadius: 14,
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  buttonText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 16,
+    textAlign: "center",
+  },
+  qrContainer: {
+    marginTop: 20,
+    alignItems: "center",
+  },
+  qrText: {
+    marginBottom: 8,
+    textAlign: "center",
+    color: "#555",
+  },
+  qrImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 10,
+  },
+  link: {
+    marginTop: 20,
+    fontSize: 15,
+    color: "#333",
+  },
+  linkUnderline: {
+    textDecorationLine: "underline",
+    color: "#ffb100",
+  },
+});
