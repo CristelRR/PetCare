@@ -24,7 +24,7 @@ export default function ProfileScreen({ navigation }) {
     try {
       await updateProfile({ name, phone });
       Alert.alert("Éxito", "Perfil actualizado correctamente");
-      navigation.replace("Main"); // ✅ Ir al menú principal
+      navigation.replace("Main"); //   Ir al menú principal
     } catch {
       Alert.alert("Error", "No se pudo actualizar el perfil");
     }

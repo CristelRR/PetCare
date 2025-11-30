@@ -2,7 +2,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "@env";
 
-// ✅ Obtener todas las mascotas del usuario autenticado
+//   Obtener todas las mascotas del usuario autenticado
 export const getPets = async () => {
   const token = await AsyncStorage.getItem("token");
   return axios.get(`${API_URL}/pets`, {
@@ -14,7 +14,7 @@ export const getPets = async () => {
   });
 };
 
-// ✅ Registrar una nueva mascota (con imagen)
+//   Registrar una nueva mascota (con imagen)
 export const registerPet = async (data) => {
   const token = await AsyncStorage.getItem("token");
   const formData = new FormData();
@@ -45,7 +45,7 @@ export const registerPet = async (data) => {
   });
 };
 
-// ✅ IA para identificar raza
+//   IA para identificar raza
 export const identifyPetPhoto = async (photoUri) => {
   const token = await AsyncStorage.getItem("token");
 
@@ -63,7 +63,7 @@ export const identifyPetPhoto = async (photoUri) => {
         "Content-Type": "multipart/form-data",
         Accept: "application/json, text/plain, */*",
       },
-      // ✅ fuerza que Axios trate de convertir siempre el JSON
+      //   fuerza que Axios trate de convertir siempre el JSON
       transformResponse: [
         (data) => {
           try {
@@ -88,7 +88,7 @@ export const identifyPetPhoto = async (photoUri) => {
 
     return res.data;
   } catch (err) {
-    console.error("🚨 Error al llamar a la IA:", err);
+    console.error("   Error al llamar a la IA:", err);
     throw err;
   }
 };

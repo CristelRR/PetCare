@@ -34,7 +34,7 @@ export default function RegisterPetScreen() {
 
  useFocusEffect(
   useCallback(() => {
-    loadPets(); // 🔁 recarga la lista cada vez que abres esta pestaña
+    loadPets(); //    recarga la lista cada vez que abres esta pestaña
   }, [])
 );
 
@@ -91,8 +91,8 @@ const pickImage = async () => {
     aiResult?.result?.score ??
     0;
 
-  console.log("✅ Label detectado:", label);
-  console.log("✅ Score detectado:", score);
+  console.log("  Label detectado:", label);
+  console.log("  Score detectado:", score);
 
   setBreed(label);
 
@@ -106,7 +106,7 @@ const pickImage = async () => {
 }
 
   } catch (error) {
-    console.error("🚨 Error en pickImage:", error);
+    console.error("   Error en pickImage:", error);
   }
 };
 
@@ -129,7 +129,7 @@ const pickImage = async () => {
       setMarks("");
       setPhoto(null);
       setShowForm(false);
-      loadPets(); // ✅ recarga lista
+      loadPets(); //   recarga lista
     } catch (error) {
       console.log(error);
       Alert.alert("Error", "No se pudo registrar la mascota.");

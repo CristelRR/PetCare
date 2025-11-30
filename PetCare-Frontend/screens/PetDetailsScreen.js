@@ -94,15 +94,15 @@ export default function PetDetailsScreen() {
           {selectedPet.photo && (
             <Image source={{ uri: selectedPet.photo }} style={styles.petImage} />
           )}
-          <Text style={styles.infoLabel}>🐶 Raza: {selectedPet.breed || "-"}</Text>
+          <Text style={styles.infoLabel}>Raza: {selectedPet.breed || "-"}</Text>
           <Text style={styles.infoLabel}>
-            🎂 Fecha de nacimiento:{" "}
+             Fecha de nacimiento:{" "}
             {selectedPet.birthDate
               ? new Date(selectedPet.birthDate).toLocaleDateString()
               : "-"}
           </Text>
-          <Text style={styles.infoLabel}>⚧ Sexo: {selectedPet.sex || "-"}</Text>
-          <Text style={styles.infoLabel}>🎨 Color: {selectedPet.color || "-"}</Text>
+          <Text style={styles.infoLabel}>Sexo: {selectedPet.sex || "-"}</Text>
+          <Text style={styles.infoLabel}>Color: {selectedPet.color || "-"}</Text>
           <Text style={styles.infoLabel}>
             🐾 Señas particulares: {selectedPet.marks || "-"}
           </Text>

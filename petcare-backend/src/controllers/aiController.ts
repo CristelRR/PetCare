@@ -28,13 +28,13 @@ export const identifyPet = async (req: Request, res: Response) => {
         .json({ message: "No se pudo identificar la imagen" });
     }
 
-    // ✅ Ordenamos las predicciones por puntaje (score)
+    //   Ordenamos las predicciones por puntaje (score)
     const predictions = response.data.sort((a, b) => b.score - a.score);
     const best = predictions[0];
 
-    console.log("✅ Mejor predicción:", best);
+    console.log("  Mejor predicción:", best);
 
-    // ✅ Limpiamos el label (“n02094433 Yorkshire_terrier” → “Yorkshire Terrier”)
+    //   Limpiamos el label (“n02094433 Yorkshire_terrier” → “Yorkshire Terrier”)
     const cleanLabel = best.label
       .replace(/^n[0-9]+ /, "")
       .replace(/_/g, " ")

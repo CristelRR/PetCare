@@ -16,7 +16,14 @@ export default function LoginScreen({ navigation }) {
   const [passwordError, setPasswordError] = useState("");
   const [otpError, setOtpError] = useState("");
 
+  const [loading, setLoading] = useState(false); // 👈 evita doble llamada
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+
+  /* ================== LOGIN ================== */
   const handleLogin = async () => {
+    if (loading) return; // 👈 evita doble tap
+    setLoading(true);
+
     let hasError = false;
 
     if (!email) {
@@ -42,22 +49,33 @@ export default function LoginScreen({ navigation }) {
       setPasswordError("");
     }
 
-    if (hasError) return;
+    if (hasError) {
+      setLoading(false);
+      return;
+    }
 
     try {
-      console.log("Intentando login con:", email, password);
+      console.log(">>> Enviando login...");
       const res = await loginUser({ email, password });
-console.log("Respuesta del backend:", res.data); 
-setOtpSent(true);
+
+      console.log("Respuesta backend:", res.data);
+      setOtpSent(true);
 
     } catch (err) {
       alert(err.response?.data?.message || "Error de conexión");
     }
+
+    setLoading(false);
   };
 
-const handleVerifyOtp = async () => {
+  /* ================== VERIFY OTP ================== */
+  const handleVerifyOtp = async () => {
+  if (verifyingOtp) return;
+  setVerifyingOtp(true);
+
   if (!otp) {
     setOtpError("Ingresa el código OTP");
+    setVerifyingOtp(false);
     return;
   } else {
     setOtpError("");
@@ -65,22 +83,28 @@ const handleVerifyOtp = async () => {
 
   try {
     const res = await verifyOtp({ email, otp });
+    console.log("✅ OTP OK, respuesta backend:", res.data);
+
     await AsyncStorage.setItem("token", res.data.token);
 
-    const firstLogin = res.data.user.firstLogin; // ✅ obtén desde el backend
+    const firstLogin = res.data.user.firstLogin;
+
     if (firstLogin) navigation.replace("Profile");
     else navigation.replace("Main");
-  } catch {
+  } catch (err) {
+    console.log("❌ Error verifyOtp:", err.response?.data || err.message);
     setOtpError("Código incorrecto o expirado");
   }
+
+  setVerifyingOtp(false);
 };
 
 
   return (
     <View style={globalStyles.container}>
-      <Image 
-        source={logo} 
-        style={{ width: 120, height: 120, alignSelf: "center", marginBottom: 20 }} 
+      <Image
+        source={logo}
+        style={{ width: 120, height: 120, alignSelf: "center", marginBottom: 20 }}
         resizeMode="contain"
       />
 
@@ -88,6 +112,7 @@ const handleVerifyOtp = async () => {
 
       {!otpSent ? (
         <>
+          {/* ======= EMAIL ======= */}
           <TextInput
             style={globalStyles.input}
             placeholder="Correo electrónico"
@@ -98,6 +123,7 @@ const handleVerifyOtp = async () => {
           />
           {emailError ? <Text style={{ color: "red", marginBottom: 5 }}>{emailError}</Text> : null}
 
+          {/* ======= PASSWORD ======= */}
           <View style={{ position: "relative", width: "100%" }}>
             <TextInput
               style={globalStyles.input}
@@ -107,7 +133,13 @@ const handleVerifyOtp = async () => {
               secureTextEntry={!showPassword}
             />
             <Text
-              style={{ position: "absolute", right: 10, top: 15, color: "blue", fontWeight: "bold" }}
+              style={{
+                position: "absolute",
+                right: 10,
+                top: 15,
+                color: "blue",
+                fontWeight: "bold"
+              }}
               onPress={() => setShowPassword(!showPassword)}
             >
               {showPassword ? "Ocultar" : "Mostrar"}
@@ -115,12 +147,23 @@ const handleVerifyOtp = async () => {
           </View>
           {passwordError ? <Text style={{ color: "red", marginBottom: 5 }}>{passwordError}</Text> : null}
 
-          <TouchableOpacity style={globalStyles.button} onPress={handleLogin}>
-            <Text style={globalStyles.buttonText}>Enviar código</Text>
+          {/* ======= LOGIN BUTTON ======= */}
+          <TouchableOpacity
+            style={[
+              globalStyles.button,
+              loading ? { opacity: 0.6 } : {}
+            ]}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            <Text style={globalStyles.buttonText}>
+              {loading ? "Enviando..." : "Iniciar Sesión"}
+            </Text>
           </TouchableOpacity>
         </>
       ) : (
         <>
+          {/* ======= OTP INPUT ======= */}
           <TextInput
             style={globalStyles.input}
             placeholder="Código OTP"
@@ -130,11 +173,28 @@ const handleVerifyOtp = async () => {
           />
           {otpError ? <Text style={{ color: "red", marginBottom: 5 }}>{otpError}</Text> : null}
 
-          <TouchableOpacity style={globalStyles.button} onPress={handleVerifyOtp}>
-            <Text style={globalStyles.buttonText}>Verificar código</Text>
+          {/* ======= OTP BUTTON ======= */}
+          <TouchableOpacity
+            style={[
+              globalStyles.button,
+              verifyingOtp ? { opacity: 0.6 } : {}
+            ]}
+            onPress={handleVerifyOtp}
+            disabled={verifyingOtp}
+          >
+            <Text style={globalStyles.buttonText}>
+              {verifyingOtp ? "Verificando..." : "Verificar código"}
+            </Text>
           </TouchableOpacity>
         </>
       )}
+
+      <Text
+        style={[globalStyles.linkText, { marginTop: 10 }]}
+        onPress={() => navigation.navigate("ForgotPassword")}
+      >
+        ¿Olvidaste tu contraseña?
+      </Text>
 
       <Text style={globalStyles.linkText} onPress={() => navigation.navigate("Registro")}>
         ¿No tienes cuenta? Regístrate
